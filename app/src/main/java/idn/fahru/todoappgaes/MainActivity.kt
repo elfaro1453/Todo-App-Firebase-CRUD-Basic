@@ -81,13 +81,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // cekData menuju ke database firebase bagian "Daftar Nama"
         cekData = databaseRef.child("Daftar Nama")
+        // addValueEventListener digunakan untuk memantau perubahan database di folder Daftar Nama
         cekData.addValueEventListener(readDataListener)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // hapus event listener
+        // hapus pemantau (event listener) pada cekData yang berisi folder "Daftar Nama"
         // https://firebase.google.com/docs/database/android/read-and-write#detach_listeners
         cekData.removeEventListener(readDataListener)
     }
