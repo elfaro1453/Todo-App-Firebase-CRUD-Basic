@@ -11,6 +11,12 @@ class MainActivity : AppCompatActivity() {
     // Buat variabel Database Reference yang akan diisi oleh database firebase
     private lateinit var databaseRef: DatabaseReference
 
+    // variabel cekData dibuat global
+    private lateinit var cekData : DatabaseReference
+
+    // buat variabel datalistener globar bernama readDataListener
+    private lateinit var readDataListener: ValueEventListener
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -58,24 +64,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun cekData() {
-        val dataListener = object : ValueEventListener {
+        readDataListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // cek apakah ada data di dalam folder tujuan
-                if(snapshot.childrenCount > 0) {
+                if (snapshot.childrenCount > 0) {
                     var textData = ""
-                    for(data in snapshot.children) {
+                    for (data in snapshot.children) {
                         val nilai = data.getValue(ModelNama::class.java) as ModelNama
                         textData += "${nilai.Nama} \n"
                     }
                     txt_nama.text = textData
                 }
             }
+
             override fun onCancelled(error: DatabaseError) {
             }
         }
 
-        val cekData = databaseRef.child("Daftar Nama")
-        cekData.addValueEventListener(dataListener)
+        cekData = databaseRef.child("Daftar Nama")
+        cekData.addValueEventListener(readDataListener)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // hapus event listener
+        // https://firebase.google.com/docs/database/android/read-and-write#detach_listeners
+        cekData.removeEventListener(readDataListener)
     }
 
     private fun modifData(namaAsal: String, namaTujuan: String) {
@@ -86,12 +100,12 @@ class MainActivity : AppCompatActivity() {
 
         val dataListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if(snapshot.childrenCount > 0) {
+                if (snapshot.childrenCount > 0) {
                     databaseRef.child("Daftar Nama")
                         .child(namaAsal)
                         .updateChildren(dataTujuan)
                         .addOnCompleteListener { task ->
-                            if(task.isSuccessful) toastData("Data Telah diupdate")
+                            if (task.isSuccessful) toastData("Data Telah diupdate")
                         }
                 } else {
                     toastData("Data yang dituju tidak ada di database")
@@ -145,11 +159,13 @@ class MainActivity : AppCompatActivity() {
         val data = HashMap<String, Any>()
         data["Nama"] = nama
 
+        // Logika penambahan data, yaitu cek terlebih dahulu data
+        // kemudian tambahkan data jika data belum ada
         val dataListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.childrenCount > 0) {
-                    toastData("Data Tersebut telah ada di database")
-                } else {
+                // snapshot childrencount ini menghitung jumlah data
+                // jika data kurang dari 1 maka pasti tidak ada data jadi tambahkan data
+                if (snapshot.childrenCount < 1) {
                     val tambahData = databaseRef.child("Daftar Nama")
                         .child(nama)
                         .setValue(data)
@@ -160,6 +176,8 @@ class MainActivity : AppCompatActivity() {
                             toastData("$nama gagal ditambahkan")
                         }
                     }
+                } else {
+                    toastData("Data Tersebut telah ada di database")
                 }
             }
 
